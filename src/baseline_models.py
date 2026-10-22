@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score, classification_report, confusion_matrix,
@@ -28,7 +29,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 def evaluate_model(name, estimator, data):
     pipeline = Pipeline([
-        ("preprocessor", data["preprocessor"]),
+        ("preprocessor", clone(data["preprocessor"])),
         ("model", estimator),
     ])
     pipeline.fit(data["X_train"], data["y_train"])
