@@ -26,20 +26,11 @@ Use Python 3.10+ in a virtual environment, then install the project dependencies
 
 ```bash
 python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
 python -m src.preprocessing
 ```
 
-If your CSV is stored elsewhere:
-
-```bash
-python -m src.preprocessing --csv-path /path/to/ai4i2020.csv
-```
-
-Run preprocessing unit tests (they use a small synthetic AI4I-shaped fixture and do not require downloading the dataset):
-
-```bash
-python -m unittest discover -s tests -v
-```
+If your CSV is stored elsewhere, pass `--csv-path /path/to/ai4i2020.csv` to the preprocessing command. The unit tests use a synthetic fixture and do not require the real CSV.
 
 ### Shared model-training interface
 
@@ -48,13 +39,39 @@ from src.preprocessing import load_dataset, prepare_data
 
 df = load_dataset()
 data = prepare_data(df)
-
-# Fit transformations only on training data, as part of each model pipeline.
-X_train = data["X_train"]
-X_test = data["X_test"]
-y_train = data["y_train"]
-y_test = data["y_test"]
+X_train, X_test = data["X_train"], data["X_test"]
+y_train, y_test = data["y_train"], data["y_test"]
 preprocessor = data["preprocessor"]
 ```
 
-For each model, use `Pipeline([("preprocessor", preprocessor), ("model", estimator)])`. Do not fit the preprocessor on the complete dataset before splitting. Since failures are rare, report precision, recall, F1-score and confusion matrix alongside accuracy; ROC-AUC can also be useful.
+For every model, put the preprocessor inside a scikit-learn `Pipeline` so transformations are fitted on training data only. Because failures are rare, report precision, recall, F1-score and confusion matrix alongside accuracy; ROC-AUC is also useful.
+
+## Team ownership and current branches
+
+- **Member 1 — Yashvi:** exploratory data analysis and baseline models (Logistic Regression and Decision Tree). Branch: `member1-eda-baselines`.
+- **Member 2 — project teammate:** Random Forest training and explainability via permutation importance. Branch: `member2-random-forest`.
+- Both members should use the same `src/preprocessing.py`, seed (42), stratified 80/20 split and leakage exclusions. Do not commit the downloaded dataset or generated output files unless the team agrees.
+
+## Member 1 commands
+
+```bash
+python -m src.eda
+python -m src.baseline_models
+```
+
+EDA figures and baseline metrics are written to `outputs/`.
+
+## Member 2 commands
+
+```bash
+python -m src.random_forest
+```
+
+The script writes held-out metrics and permutation importance to `outputs/`. Permutation importance is a model explanation, not proof of causation.
+
+## Evaluation notes
+
+- The held-out test set must not be used for tuning model parameters.
+- Accuracy alone can hide poor failure detection because the target is imbalanced.
+- Compare precision, recall, F1 and ROC-AUC; inspect false negatives and false positives in the confusion matrix.
+- Record limitations: synthetic-to-real-world domain gap, class imbalance, dataset age, and lack of deployment/maintenance cost data.
