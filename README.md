@@ -1,77 +1,99 @@
-# Predictive-Maintenance-AI
+# Predictive Maintenance AI
 
-Machine Failure Prediction using Explainable Machine Learning.
+Machine-failure prediction using explainable machine learning on the UCI AI4I 2020 Predictive Maintenance Dataset.
 
-## Dataset
+## Project goals
 
-This project uses the **AI4I 2020 Predictive Maintenance Dataset** from the UCI Machine Learning Repository:
-https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset
+- Explore the dataset and document data-quality findings.
+- Train and compare Logistic Regression, Decision Tree, and Random Forest classifiers.
+- Prevent target leakage and fit preprocessing only on training data.
+- Evaluate minority-class performance and explain model predictions with permutation importance.
 
-Download the CSV and save it as `data/ai4i2020.csv`. The dataset is not committed to this repository.
+## Dataset setup
 
-## Preprocessing
+1. Download the CSV from the [UCI AI4I 2020 dataset page](https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset).
+2. Save it locally as `data/ai4i2020.csv`.
 
-The shared preprocessing utilities are in `src/preprocessing.py`. They:
+The raw dataset is intentionally **not tracked by Git**. The `.gitignore` excludes local CSVs in `data/` and generated files in `outputs/`.
 
-- Validate the expected AI4I column schema and binary `Machine failure` target.
-- Remove exact duplicate rows and rows with a missing target.
-- Report missing feature values and IQR-based outlier counts. Outliers are reported rather than automatically deleted because extreme sensor readings may be meaningful.
-- Exclude row identifiers (`UDI`, `Product ID`) and failure-mode flags (`TWF`, `HDF`, `PWF`, `OSF`, `RNF`) from predictors to avoid target leakage.
-- Create a reproducible, stratified 80/20 train-test split (seed 42).
-- Return a scikit-learn preprocessing transformer that imputes missing values, scales numeric features, and one-hot encodes categorical features. Fit it only through a model pipeline on the training set.
+## Requirements and setup
 
-### Setup and run
-
-Use Python 3.10+ in a virtual environment, then install the project dependencies:
+Use Python 3.10 or newer and create a virtual environment.
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-python -m unittest discover -s tests -v
-python -m src.preprocessing
 ```
 
-If your CSV is stored elsewhere, pass `--csv-path /path/to/ai4i2020.csv` to the preprocessing command. The unit tests use a synthetic fixture and do not require the real CSV.
+Windows PowerShell activation:
 
-### Shared model-training interface
-
-```python
-from src.preprocessing import load_dataset, prepare_data
-
-df = load_dataset()
-data = prepare_data(df)
-X_train, X_test = data["X_train"], data["X_test"]
-y_train, y_test = data["y_train"], data["y_test"]
-preprocessor = data["preprocessor"]
+```powershell
+.venv\Scripts\Activate.ps1
 ```
 
-For every model, put the preprocessor inside a scikit-learn `Pipeline` so transformations are fitted on training data only. Because failures are rare, report precision, recall, F1-score and confusion matrix alongside accuracy; ROC-AUC is also useful.
+## Run the project
 
-## Team ownership and current branches
-
-- **Member 1 — Yashvi:** exploratory data analysis and baseline models (Logistic Regression and Decision Tree). Branch: `member1-eda-baselines`.
-- **Member 2 — project teammate:** Random Forest training and explainability via permutation importance. Branch: `member2-random-forest`.
-- Both members should use the same `src/preprocessing.py`, seed (42), stratified 80/20 split and leakage exclusions. Do not commit the downloaded dataset or generated output files unless the team agrees.
-
-## Member 1 commands
+From the repository root:
 
 ```bash
+# Unit tests (synthetic test data; real CSV not required)
+python -m unittest discover -s tests -v
+
+# Dataset cleaning report and stratified train/test split summary
+python -m src.preprocessing
+
+# Exploratory analysis and baseline classifiers
 python -m src.eda
 python -m src.baseline_models
-```
 
-EDA figures and baseline metrics are written to `outputs/`.
-
-## Member 2 commands
-
-```bash
+# Random Forest evaluation and permutation importance
 python -m src.random_forest
 ```
 
-The script writes held-out metrics and permutation importance to `outputs/`. Permutation importance is a model explanation, not proof of causation.
+All scripts that load the real dataset expect `data/ai4i2020.csv`. Preprocessing also accepts a custom path:
 
-## Evaluation notes
+```bash
+python -m src.preprocessing --csv-path /path/to/ai4i2020.csv
+```
 
-- The held-out test set must not be used for tuning model parameters.
-- Accuracy alone can hide poor failure detection because the target is imbalanced.
-- Compare precision, recall, F1 and ROC-AUC; inspect false negatives and false positives in the confusion matrix.
-- Record limitations: synthetic-to-real-world domain gap, class imbalance, dataset age, and lack of deployment/maintenance cost data.
+Generated charts, summaries, and metrics are written to `outputs/` and are excluded from version control. Run the scripts to regenerate them.
+
+## Preprocessing and leakage prevention
+
+The shared utilities in `src/preprocessing.py`:
+
+- Validate the expected AI4I schema and binary `Machine failure` target.
+- Remove exact duplicate rows and rows with a missing target.
+- Report missing feature values and IQR-based outliers; do not automatically delete outliers because unusual sensor readings may be meaningful.
+- Exclude row identifiers (`UDI`, `Product ID`) and failure-mode flags (`TWF`, `HDF`, `PWF`, `OSF`, `RNF`) from predictors.
+- Use a reproducible, stratified 80/20 split with random seed 42.
+- Impute missing values, scale numeric features, and one-hot encode categorical features inside the model pipeline so the transformers are fitted on training data only.
+
+## Models and evaluation
+
+| Model | Script |
+|---|---|
+| Logistic Regression | `src/baseline_models.py` |
+| Decision Tree | `src/baseline_models.py` |
+| Random Forest | `src/random_forest.py` |
+
+Because failures are rare, do not rely on accuracy alone. Compare precision, recall, F1-score, ROC-AUC, and the confusion matrix; pay particular attention to false negatives and false positives. The held-out test set should not be used to tune hyperparameters.
+
+Permutation importance describes how shuffling an input feature affects the chosen evaluation score; it does not establish causation.
+
+## Team contributions
+
+- **Member 1 — Yashvi:** exploratory data analysis and baseline classifiers.
+- **Member 2 — project teammate:** Random Forest model and permutation-based feature importance.
+- **Shared:** preprocessing, leakage prevention, tests, documentation, and model comparison.
+
+Both members should use the shared preprocessing module, random seed, split strategy, and feature exclusions.
+
+## Limitations and future scope
+
+- The AI4I dataset is synthetic and may not represent every real industrial setting.
+- Failure classes are imbalanced, and the best decision threshold depends on maintenance costs.
+- The dataset does not supply the operational context needed to estimate real-world downtime or intervention costs.
+- Future work could add threshold tuning on validation data, calibration, model persistence, a Streamlit demo, and evaluation on real sensor data.

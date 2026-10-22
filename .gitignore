@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project-local files
+.env.*
+!.env.example
+data/*.csv
+!data/README.md
+outputs/*
+!outputs/.gitkeep
+.DS_Store
+Thumbs.db
