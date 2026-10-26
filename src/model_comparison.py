@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 from sklearn.base import clone
-from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score, confusion_matrix, f1_score, precision_score,
@@ -24,6 +24,7 @@ from sklearn.metrics import (
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
@@ -31,6 +32,11 @@ from src.preprocessing import load_dataset, prepare_data
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
+
+
+def _to_dense(values):
+    """Convert sparse one-hot output to dense for estimators such as GaussianNB."""
+    return values.toarray() if hasattr(values, "toarray") else values
 
 
 def _positive_probabilities(model, X_test):
@@ -66,10 +72,12 @@ def compare_models(data):
     ]
     detailed = []
     for name, estimator in candidates:
-        pipeline = Pipeline([
-            ("preprocessor", clone(data["preprocessor"])),
-            ("model", estimator),
-        ])
+        steps = [("preprocessor", clone(data["preprocessor"]))]
+        # GaussianNB requires dense input; other estimators accept sparse output.
+        if name == "Naive Bayes":
+            steps.append(("dense", FunctionTransformer(_to_dense, accept_sparse=True)))
+        steps.append(("model", estimator))
+        pipeline = Pipeline(steps)
         pipeline.fit(data["X_train"], data["y_train"])
         pred = pipeline.predict(data["X_test"])
         scores = _positive_probabilities(pipeline, data["X_test"])
