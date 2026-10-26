@@ -1,45 +1,38 @@
-# Streamlit demo plan
+# Streamlit Demo — Implementation Notes
 
-## Goal
-A locally runnable educational demo predicting the binary Machine failure target from six permitted AI4I features. It is not an industrial safety system.
+## Purpose
+The app is an educational prototype that predicts the binary `Machine failure` target from six permitted AI4I features. It is not a certified industrial safety system.
 
-## Member 1 — Yashvi (UI)
-Branch: feature/streamlit-ui
-- Own app.py: page layout, six machine inputs, prediction display, probability display, input summary, and limitation messaging.
-- Use src.model_service rather than duplicating preprocessing or training.
-- Test the UI after the model-serving branch is merged.
+## Runtime contract
+- **UI:** `app.py`
+- **Inference:** `src/model_service.py`
+- **Training:** `src/train_model.py`
+- **Saved pipeline:** `outputs/predictive_maintenance_pipeline.joblib` (generated locally; not committed)
+- **Input features:** `Type`, `Air temperature [K]`, `Process temperature [K]`, `Rotational speed [rpm]`, `Torque [Nm]`, `Tool wear [min]`
+- **Inference function:** `predict_machine_failure(model, machine_input)`
+- **Output keys:** `prediction` (0/1), `failure_probability` (float or null), `label`
 
-## Member 2 — Vishesh (model serving)
-Branch: feature/model-serving
-- Add src/train_model.py to fit and persist the full preprocessing + classifier pipeline.
-- Add src/model_service.py to load the artifact and validate the six input features.
-- Add tests for the prediction interface.
-- Exclude UDI, Product ID and failure-mode flags TWF, HDF, PWF, OSF, RNF.
+The persisted artifact contains the fitted preprocessing pipeline and classifier. Training and inference must use the same feature contract. The input does not include identifiers (`UDI`, `Product ID`) or failure-mode flags (`TWF`, `HDF`, `PWF`, `OSF`, `RNF`).
 
-## Shared interface
-Artifact: outputs/predictive_maintenance_pipeline.joblib
-Training command: python -m src.train_model
-Inference function: predict_machine_failure(model, machine_input)
-Inputs: Type, Air temperature [K], Process temperature [K], Rotational speed [rpm], Torque [Nm], Tool wear [min]
-Output keys: prediction (0/1), failure_probability (float or null), label.
+## Run locally
+Run commands from the repository root. Download the UCI AI4I CSV and save it as `data/ai4i2020.csv`.
 
-## Integration order
-1. Merge model-serving PR first.
-2. Merge UI PR second.
-3. Download the CSV to data/ai4i2020.csv locally.
-4. Install requirements, run unit tests, train model, then run streamlit run app.py.
-5. Test predictions, missing-artifact behavior, and edge inputs.
-6. Confirm the final model choice matches the notebook's measured comparison before submission.
-
-## Commands
+```bash
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python -m src.train_model
 streamlit run app.py
+```
 
-## Acceptance checklist
-- Do not commit raw CSV or trained binary artifact.
-- Persist preprocessing inside the fitted pipeline.
-- Exclude target leakage flags and identifiers.
-- Clearly state limitations; do not claim certainty.
-- Run tests locally before merging.
+## Manual acceptance checks
+- App shows a useful message when the CSV or model artifact is missing.
+- A submitted form returns a class label and probability when the model supports probabilities.
+- Inputs shown in the summary match the values submitted.
+- Probability is described as a model estimate, not necessarily a calibrated real-world risk.
+- The UI says that a negative prediction does not guarantee machine safety.
+- Before final submission, align the model trained for the app with the model selected from measured comparison results.
+
+## Team ownership
+- **Yashvi:** Streamlit interface, usability, and demo screenshots.
+- **Vishesh:** training/inference service, evaluation, and tests.
+- **Both:** understand preprocessing, leakage prevention, metrics, and limitations end-to-end.
