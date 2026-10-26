@@ -5,9 +5,9 @@ Machine-failure prediction using explainable machine learning on the UCI AI4I 20
 ## Project goals
 
 - Explore the dataset and document data-quality findings.
-- Train and compare Logistic Regression, Decision Tree, and Random Forest classifiers.
+- Train and compare the six classification models listed in the capstone guidelines; at minimum, Logistic Regression, Decision Tree, and Random Forest are required.
 - Prevent target leakage and fit preprocessing only on training data.
-- Evaluate minority-class performance and explain model predictions with permutation importance.
+- Evaluate minority-class performance, compare models using consistent metrics, and explain predictions with permutation importance.
 
 ## Dataset setup
 
@@ -50,6 +50,15 @@ python -m src.baseline_models
 
 # Random Forest evaluation and permutation importance
 python -m src.random_forest
+
+# Compare all six capstone classification models on the same stratified split
+python -m src.model_comparison
+
+# Train and save the pipeline used by the Streamlit demo
+python -m src.train_model
+
+# Launch the interactive demo
+streamlit run app.py
 ```
 
 All scripts that load the real dataset expect `data/ai4i2020.csv`. Preprocessing also accepts a custom path:
@@ -83,6 +92,13 @@ Because failures are rare, do not rely on accuracy alone. Compare precision, rec
 
 Permutation importance describes how shuffling an input feature affects the chosen evaluation score; it does not establish causation.
 
+## Capstone report and viva preparation
+
+- Start from `reports/capstone_report_template.md`. Populate all `[FILL]` fields from actual generated outputs; do not invent metrics.
+- Use `docs/capstone-checklist-and-viva.md` to verify the required workflow and prepare both team members for the viva.
+- `python -m src.model_comparison` writes `outputs/model_comparison.csv` and `outputs/model_comparison_details.json`. Review confusion matrices and false negatives before selecting the final model.
+- `python -m src.random_forest` writes permutation-importance results and a plot. Interpret importance as predictive usefulness, not causation.
+
 ## Team contributions
 
 - **Member 1 — Yashvi:** exploratory data analysis and baseline classifiers.
@@ -96,4 +112,4 @@ Both members should use the shared preprocessing module, random seed, split stra
 - The AI4I dataset is synthetic and may not represent every real industrial setting.
 - Failure classes are imbalanced, and the best decision threshold depends on maintenance costs.
 - The dataset does not supply the operational context needed to estimate real-world downtime or intervention costs.
-- Future work could add threshold tuning on validation data, calibration, model persistence, a Streamlit demo, and evaluation on real sensor data.
+- Future work could add threshold tuning on validation data, calibration, monitoring for data drift, and evaluation on real sensor data.
