@@ -1,37 +1,48 @@
-"""Baseline classifiers owned by Member 1 (Yashvi).
+"""Baseline classifiers: Logistic Regression and Decision Tree.
 
-Run from the repository root after placing data/ai4i2020.csv:
+Run from the repository root with:
     python -m src.baseline_models
 
-Metrics include precision/recall/F1 because machine failures are rare.
-All transformations are fitted inside each model Pipeline on training data only.
+Or run directly:
+    python src/baseline_models.py
 """
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 import pandas as pd
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    accuracy_score, classification_report, confusion_matrix,
-    f1_score, precision_score, recall_score, roc_auc_score,
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
 )
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
 
 from src.preprocessing import load_dataset, prepare_data
 
-OUTPUT_DIR = Path("outputs")
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 
 def evaluate_model(name, estimator, data):
-    pipeline = Pipeline([
-        ("preprocessor", clone(data["preprocessor"])),
-        ("model", estimator),
-    ])
+    pipeline = Pipeline(
+        [
+            ("preprocessor", clone(data["preprocessor"])),
+            ("model", estimator),
+        ]
+    )
     pipeline.fit(data["X_train"], data["y_train"])
     predictions = pipeline.predict(data["X_test"])
     probabilities = pipeline.predict_proba(data["X_test"])[:, 1]
@@ -50,17 +61,26 @@ def evaluate_model(name, estimator, data):
 
 
 def main():
-    df = load_dataset()
-    data = prepare_data(df)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    data = prepare_data(load_dataset())
     models = [
-        ("Logistic Regression", LogisticRegression(
-            class_weight="balanced", max_iter=2000, random_state=42
-        )),
-        ("Decision Tree", DecisionTreeClassifier(
-            class_weight="balanced", max_depth=8, min_samples_leaf=10,
-            random_state=42
-        )),
+        (
+            "Logistic Regression",
+            LogisticRegression(
+                class_weight="balanced", max_iter=2000, random_state=42
+            ),
+        ),
+        (
+            "Decision Tree",
+            DecisionTreeClassifier(
+                class_weight="balanced",
+                max_depth=8,
+                min_samples_leaf=10,
+                random_state=42,
+            ),
+        ),
     ]
+
     results = []
     for name, estimator in models:
         _, metrics = evaluate_model(name, estimator, data)
@@ -70,17 +90,22 @@ def main():
             f"recall={metrics['recall']:.3f}, f1={metrics['f1']:.3f}, "
             f"roc_auc={metrics['roc_auc']:.3f}"
         )
-        print("Confusion matrix [ [TN, FP], [FN, TP] ]:", metrics["confusion_matrix"])
+        print("Confusion matrix [[TN, FP], [FN, TP]]:", metrics["confusion_matrix"])
 
-    summary = pd.DataFrame([
-        {key: row[key] for key in ("model", "accuracy", "precision", "recall", "f1", "roc_auc")}
-        for row in results
-    ]).sort_values("f1", ascending=False)
+    summary = pd.DataFrame(
+        [
+            {
+                key: row[key]
+                for key in ("model", "accuracy", "precision", "recall", "f1", "roc_auc")
+            }
+            for row in results
+        ]
+    ).sort_values("f1", ascending=False)
     summary.to_csv(OUTPUT_DIR / "baseline_metrics.csv", index=False)
     (OUTPUT_DIR / "baseline_details.json").write_text(
         json.dumps(results, indent=2), encoding="utf-8"
     )
-    print("\nSaved outputs/baseline_metrics.csv and outputs/baseline_details.json")
+    print(f"Saved baseline results under {OUTPUT_DIR}")
 
 
 if __name__ == "__main__":
