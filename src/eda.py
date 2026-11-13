@@ -1,11 +1,22 @@
 """Reproducible exploratory data analysis for the AI4I dataset.
 
-Run: python -m src.eda
-Requires data/ai4i2020.csv. Figures and a text summary are saved under outputs/.
+Run from the repository root:
+    python -m src.eda
+
+Or run this file directly:
+    python src/eda.py
+
+The dataset and outputs are resolved relative to the repository, not the
+terminal's current working directory.
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -14,16 +25,21 @@ import pandas as pd
 import seaborn as sns
 
 from src.preprocessing import (
-    IDENTIFIER_COLUMNS, LEAKAGE_COLUMNS, TARGET_COLUMN, load_dataset, clean_dataset,
+    IDENTIFIER_COLUMNS,
+    LEAKAGE_COLUMNS,
+    TARGET_COLUMN,
+    clean_dataset,
+    load_dataset,
 )
 
-OUTPUT_DIR = Path("outputs")
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 
 def main():
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     raw = load_dataset()
     df, report = clean_dataset(raw)
+
     report_path = OUTPUT_DIR / "eda_summary.txt"
     report_path.write_text(
         "AI4I 2020 EDA summary\n"
@@ -40,13 +56,17 @@ def main():
     sns.set_theme(style="whitegrid")
     fig, ax = plt.subplots(figsize=(6, 4))
     sns.countplot(data=df, x=TARGET_COLUMN, ax=ax)
-    ax.set(title="Machine failure class balance", xlabel="Machine failure (0 = no, 1 = yes)")
+    ax.set(
+        title="Machine failure class balance",
+        xlabel="Machine failure (0 = no, 1 = yes)",
+    )
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "target_distribution.png", dpi=160)
     plt.close(fig)
 
     numeric = df.select_dtypes(include="number").drop(
-        columns=[TARGET_COLUMN, *IDENTIFIER_COLUMNS, *LEAKAGE_COLUMNS], errors="ignore"
+        columns=[TARGET_COLUMN, *IDENTIFIER_COLUMNS, *LEAKAGE_COLUMNS],
+        errors="ignore",
     )
     if not numeric.empty:
         fig, ax = plt.subplots(figsize=(10, 7))
@@ -56,7 +76,7 @@ def main():
         fig.savefig(OUTPUT_DIR / "numeric_correlation.png", dpi=160)
         plt.close(fig)
 
-    print(f"EDA outputs written to {OUTPUT_DIR.resolve()}")
+    print(f"EDA outputs written to {OUTPUT_DIR}")
     print(report_path.read_text(encoding="utf-8"))
 
 
