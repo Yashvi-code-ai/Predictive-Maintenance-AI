@@ -80,7 +80,7 @@ Use `outputs/random_forest_permutation_importance.csv` and `outputs/random_fores
 - Individual example: [ADD one test/sample prediction and explain its inputs and output without implying causal certainty.]
 
 ## 9. Streamlit demonstration
-Run `python -m src.train_model`, then `streamlit run app.py`.
+Run `python train_model.py`, then `streamlit run app.py`.
 Demonstrate at least:
 1. A typical input and its predicted class/probability.
 2. A second input with different operating conditions.
@@ -106,7 +106,7 @@ Add screenshots from your own successful local run.
 
 ## 12. Team contribution
 - **Member 1 — Yashvi:** EDA, baseline classifiers, Streamlit UI, and documentation contributions.
-- **Member 2 — Vishesh:** Random Forest/evaluation, model-serving pipeline, testing, and explainability contributions.
+- **Member 2 — Vishesh:** Random Forest/evaluation, model-serving pipeline, and explainability contributions.
 - **Shared responsibility:** both members must be able to explain the dataset, preprocessing, leakage prevention, model comparison, metrics, limitations, and live demo.
 
 Adjust this section to match the work each member actually completed.
