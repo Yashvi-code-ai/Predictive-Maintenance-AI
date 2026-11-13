@@ -45,7 +45,7 @@ The preprocessing and EDA runs reported:
 - Rows after cleaning: **10,000**.
 - Missing values by column: **0**.
 - Train/test split: **8,000 / 2,000** (stratified 80/20).
-- Training target distribution: **9,661 normal / 339 failure** in the full cleaned dataset; the held-out test set contained 1,932 normal and 68 failure records.
+- Full-dataset target distribution: **9,661 normal / 339 failure**; the held-out test set contained 1,932 normal and 68 failure records.
 - IQR outliers reported: Rotational speed **418**; Torque **69**; all other numeric input features **0**.
 
 Numeric values are imputed and scaled, and the categorical Type feature is imputed and one-hot encoded inside each model pipeline.
